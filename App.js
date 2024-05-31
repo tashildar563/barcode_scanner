@@ -6,14 +6,16 @@ import XLSX from "xlsx";
 import * as Sharing from "expo-sharing";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
+import { AsyncStorage } from "@react-native-async-storage/async-storage";
 
 export default function App() {
-  const [item, setItem] = React.useState("");
+  const [item, setItem] = React.useState("Dress");
   const [quantity, setQuantity] = React.useState("");
   const [amount, setAmount] = React.useState("");
   const [paymentMode, setPaymentMode] = React.useState("Cash");
   const [date, setDate] = React.useState(new Date());
   const [showPicker, setShowPicker] = React.useState(false);
+  const [data, setData] = React.useState([]);
 
   const toggleDatePicker = () => {
     setShowPicker(!showPicker);
@@ -31,8 +33,6 @@ export default function App() {
     setShowPicker(false);
   };
 
-  const [data, setData] = React.useState([]);
-
   const handleSubmit = () => {
     const entry = {
       date: formatDate(date),
@@ -49,6 +49,21 @@ export default function App() {
     setAmount("");
     setPaymentMode("Cash");
   };
+
+  const loadData = async () => {
+    try {
+      const storedData = await AsyncStorage("@sales_trans");
+      if (storedData !== null) {
+        setData(JSON.parse(storedData));
+        console.log("Data loaded successfully!");
+      }
+    } catch (error) {
+      console.info("Data not present to load data:", error);
+    }
+  };
+  React.useEffect(() => {
+    loadData();
+  }, []);
 
   const generateExcel = async () => {
     if (data.length > 0) {
@@ -109,8 +124,19 @@ export default function App() {
             error
           );
         });
+      storeData();
     } else {
       alert("No data entered. File not created.");
+    }
+  };
+
+  const storeData = async () => {
+    try {
+      const jsonValue = JSON.stringify(data);
+      await AsyncStorage.setItem("sales_trans", jsonValue);
+      console.log("Data stored successfully!{}", jsonValue);
+    } catch (error) {
+      console.error("Error storing data:", error);
     }
   };
   const handleRemoveItem = (index) => {
@@ -141,18 +167,45 @@ export default function App() {
     "Amount",
     "Payment Mode",
   ];
+  const items = [
+    "Dress",
+    "Gown",
+    "Palazzo",
+    "Cigar pant",
+    "Jeggings",
+    "Short Top",
+    "Kurtis",
+    "Ladies Shirt",
+    "Night Pant",
+    "Big Purse",
+    "Small Purse",
+    "Small Earings",
+    "Zumka",
+    "Comb",
+    "Nail Paint",
+    "Lipstick",
+    "Lipgloss",
+    "Clutch",
+    "Bindi",
+    "BajuBand",
+    "Bangles",
+    "Hair Pin",
+    "Nose Pin",
+    "Hair Band",
+    "Kamar Patta",
+    "LipBalm",
+    "Haldi Set",
+    "Ponds Powder",
+    "Necklace",
+    "Gandh",
+    "Tikali",
+  ];
   const formatDate = (date) => {
     const options = { year: "numeric", month: "long", day: "numeric" };
-
-    // Check if date is a Date object
     if (!(date instanceof Date)) {
-      // If not, try to convert it to a Date object
       date = new Date(date);
     }
-
-    // Check if date is a valid Date object
     if (isNaN(date.getTime())) {
-      // If not, return an error message or handle the error in some other way
       return "Invalid date";
     }
 
@@ -173,13 +226,16 @@ export default function App() {
           onChange={onChange}
           mode="date"
         />
-      )}
-      <TextInput
+      )}      
+      <Picker
+        selectedValue={item}
+        onValueChange={(itemValue, itemIndex) => setItem(itemValue)}
         style={styles.input}
-        placeholder="Item"
-        value={item}
-        onChangeText={setItem}
-      />
+      >
+        {items.map((item, index) => (
+          <Picker.Item key={index} label={item} value={item} />
+        ))}
+      </Picker>
       <TextInput
         style={styles.input}
         placeholder="Quantity"
@@ -197,6 +253,7 @@ export default function App() {
       <Picker
         selectedValue={paymentMode}
         onValueChange={(itemValue) => setPaymentMode(itemValue)}
+        style={styles.input}
       >
         <Picker.Item label="Cash" value="Cash" />
         <Picker.Item label="UPI" value="UPI" />
@@ -239,32 +296,30 @@ const styles = StyleSheet.create({
     alignItems: "center",
     flexDirection: "row",
     justifyContent: "flex-start",
-    borderWidth: 1,
-    borderColor: "lightskyblue",
-    borderRadius: 5,
     paddingRight: 10,
-    height: "5%",
+    height: 50,
     marginBottom: 3,
     width: "100%",
-    paddingHorizontal: 10,
+    paddingHorizontal: 15,
+    backgroundColor: "#f0fbff",
   },
   container: {
+    margin: 10,
     flex: 1,
-    justifyContent: "center",
-    backgroundColor: "white", // Modified background color
-    paddingVertical: 3,
+    justifyContent: "space-between",
+    backgroundColor: "white", 
     paddingHorizontal: 5,
     height: "100%",
     marginTop: 70,
   },
   input: {
-    height: "5%",
+    height: 50,
     width: "100%",
-    borderColor: "lightskyblue",
-    borderWidth: 1,
+    // borderColor: "lightskyblue",
+    // borderWidth: 1,
     marginBottom: 3,
-    paddingHorizontal: 10,
-    borderRadius: 5,
+    paddingHorizontal: 15,
+    backgroundColor: "#f0fbff",
   },
   row: {
     flexDirection: "row",
@@ -296,10 +351,11 @@ const styles = StyleSheet.create({
   removeButton: {
     width: 20,
     height: 20,
-    color: "red",
+    color: "black",
     textAlign: "center",
-    backgroundColor: "black",
-    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: "black",
+    borderRadius: 4,
   },
   exportButton: {
     textAlignVertical: "center",
